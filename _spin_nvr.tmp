@@ -1,0 +1,104 @@
+never testing {    /* !([] (1)) */
+T0_init:
+	do
+	:: atomic { (! ((1))) -> assert(!(! ((1)))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never testing2 {    /* !([] (0)) */
+T0_init:
+	do
+	:: atomic { (! ((0))) -> assert(!(! ((0)))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never bufferAtomic {    /* !([] ((! ((sendBuffer[0].inusing_worker[0]) && (sendBuffer[0].inusing_worker[1]))) && (! ((sendBuffer[1].inusing_worker[0]) && (sendBuffer[1].inusing_worker[1]))))) */
+T0_init:
+	do
+	:: atomic { (! (((! ((sendBuffer[0].inusing_worker[0]) && (sendBuffer[0].inusing_worker[1]))) && (! ((sendBuffer[1].inusing_worker[0]) && (sendBuffer[1].inusing_worker[1])))))) -> assert(!(! (((! ((sendBuffer[0].inusing_worker[0]) && (sendBuffer[0].inusing_worker[1]))) && (! ((sendBuffer[1].inusing_worker[0]) && (sendBuffer[1].inusing_worker[1]))))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never bufferCap {    /* !([] (((((sendBuffer[0].cur_size<=MAX_BUFFER_SIZE_GLOB)) && ((sendBuffer[1].cur_size<=MAX_BUFFER_SIZE_GLOB))) && ((recvBuffer[0].cur_size<=MAX_BUFFER_SIZE_GLOB))) && ((recvBuffer[1].cur_size<=MAX_BUFFER_SIZE_GLOB)))) */
+T0_init:
+	do
+	:: atomic { (! ((((((sendBuffer[0].cur_size<=MAX_BUFFER_SIZE_GLOB)) && ((sendBuffer[1].cur_size<=MAX_BUFFER_SIZE_GLOB))) && ((recvBuffer[0].cur_size<=MAX_BUFFER_SIZE_GLOB))) && ((recvBuffer[1].cur_size<=MAX_BUFFER_SIZE_GLOB))))) -> assert(!(! ((((((sendBuffer[0].cur_size<=MAX_BUFFER_SIZE_GLOB)) && ((sendBuffer[1].cur_size<=MAX_BUFFER_SIZE_GLOB))) && ((recvBuffer[0].cur_size<=MAX_BUFFER_SIZE_GLOB))) && ((recvBuffer[1].cur_size<=MAX_BUFFER_SIZE_GLOB)))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never noStarvation {    /* !(<> (((sendBuffer[0].selectTimes>0)) && ((sendBuffer[1].selectTimes>0)))) */
+accept_init:
+T0_init:
+	do
+	:: (! ((((sendBuffer[0].selectTimes>0)) && ((sendBuffer[1].selectTimes>0))))) -> goto T0_init
+	od;
+}
+never notSelectIfDesBufferIsFull {    /* !([] ((! ((orchestrate[orchestor_pid]@CHECK_ARBITER_SELECTION_REGION))) || (((recvBuffer[arbiter.nextSending].cur_size+SEND_BATCH_SIZE)<=MAX_BUFFER_SIZE_GLOB)))) */
+T0_init:
+	do
+	:: atomic { (! (((! ((orchestrate[orchestor_pid]@CHECK_ARBITER_SELECTION_REGION))) || (((recvBuffer[arbiter.nextSending].cur_size+SEND_BATCH_SIZE)<=MAX_BUFFER_SIZE_GLOB))))) -> assert(!(! (((! ((orchestrate[orchestor_pid]@CHECK_ARBITER_SELECTION_REGION))) || (((recvBuffer[arbiter.nextSending].cur_size+SEND_BATCH_SIZE)<=MAX_BUFFER_SIZE_GLOB)))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never producerStopWhenBufferIsFull {    /* !([] (((! ((sendBuffer[0].cur_size==MAX_BUFFER_SIZE_GLOB))) || (! (producer[0].running))) && ((! ((sendBuffer[1].cur_size==MAX_BUFFER_SIZE_GLOB))) || (! (producer[1].running))))) */
+T0_init:
+	do
+	:: atomic { (! ((((! ((sendBuffer[0].cur_size==MAX_BUFFER_SIZE_GLOB))) || (! (producer[0].running))) && ((! ((sendBuffer[1].cur_size==MAX_BUFFER_SIZE_GLOB))) || (! (producer[1].running)))))) -> assert(!(! ((((! ((sendBuffer[0].cur_size==MAX_BUFFER_SIZE_GLOB))) || (! (producer[0].running))) && ((! ((sendBuffer[1].cur_size==MAX_BUFFER_SIZE_GLOB))) || (! (producer[1].running))))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never consumerAliveWhileBufferIsNotEmpty {    /* !([] (((! ((recvBuffer[0].cur_size!=0))) || (! (consumer[0].isHault))) && ((! ((recvBuffer[1].cur_size!=0))) || (! (consumer[1].isHault))))) */
+T0_init:
+	do
+	:: atomic { (! ((((! ((recvBuffer[0].cur_size!=0))) || (! (consumer[0].isHault))) && ((! ((recvBuffer[1].cur_size!=0))) || (! (consumer[1].isHault)))))) -> assert(!(! ((((! ((recvBuffer[0].cur_size!=0))) || (! (consumer[0].isHault))) && ((! ((recvBuffer[1].cur_size!=0))) || (! (consumer[1].isHault))))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never consumerPauseWhileBufferIsEmpty {    /* !([] (((! ((recvBuffer[0].cur_size==0))) || (! (consumer[0].isRunning))) && ((! ((recvBuffer[1].cur_size==0))) || (! (consumer[1].isRunning))))) */
+T0_init:
+	do
+	:: atomic { (! ((((! ((recvBuffer[0].cur_size==0))) || (! (consumer[0].isRunning))) && ((! ((recvBuffer[1].cur_size==0))) || (! (consumer[1].isRunning)))))) -> assert(!(! ((((! ((recvBuffer[0].cur_size==0))) || (! (consumer[0].isRunning))) && ((! ((recvBuffer[1].cur_size==0))) || (! (consumer[1].isRunning))))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never fairnessChecking {    /* !([] ((! ((orchestrate[orchestor_pid]@SELECTING_TIME_QUANTUM_CAPTURE))) || ((! ((arbiter.CAP_everyLaneReady) && (arbiter.CAP_IsDiffExceed))) || ((arbiter.CAP_nextSending==(recvBuffer[1].cur_size<recvBuffer[0].cur_size)))))) */
+T0_init:
+	do
+	:: atomic { (! (((! ((orchestrate[orchestor_pid]@SELECTING_TIME_QUANTUM_CAPTURE))) || ((! ((arbiter.CAP_everyLaneReady) && (arbiter.CAP_IsDiffExceed))) || ((arbiter.CAP_nextSending==(recvBuffer[1].cur_size<recvBuffer[0].cur_size))))))) -> assert(!(! (((! ((orchestrate[orchestor_pid]@SELECTING_TIME_QUANTUM_CAPTURE))) || ((! ((arbiter.CAP_everyLaneReady) && (arbiter.CAP_IsDiffExceed))) || ((arbiter.CAP_nextSending==(recvBuffer[1].cur_size<recvBuffer[0].cur_size)))))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never fairnessChecking2 {    /* !([] ((! ((orchestrate[orchestor_pid]@SELECTING_TIME_QUANTUM_CAPTURE))) || ((! ((! (arbiter.CAP_fairNessHandle)) && (arbiter.CAP_everyLaneReady))) || ((arbiter.CAP_nextSending==(sendBuffer[1].cur_size>sendBuffer[0].cur_size)))))) */
+T0_init:
+	do
+	:: atomic { (! (((! ((orchestrate[orchestor_pid]@SELECTING_TIME_QUANTUM_CAPTURE))) || ((! ((! (arbiter.CAP_fairNessHandle)) && (arbiter.CAP_everyLaneReady))) || ((arbiter.CAP_nextSending==(sendBuffer[1].cur_size>sendBuffer[0].cur_size))))))) -> assert(!(! (((! ((orchestrate[orchestor_pid]@SELECTING_TIME_QUANTUM_CAPTURE))) || ((! ((! (arbiter.CAP_fairNessHandle)) && (arbiter.CAP_everyLaneReady))) || ((arbiter.CAP_nextSending==(sendBuffer[1].cur_size>sendBuffer[0].cur_size)))))))) }
+	:: (1) -> goto T0_init
+	od;
+accept_all:
+	skip
+}
+never nodataLost {    /* !(<> (((producer[0].produced==consumer[0].retrievedPacket)) && ((producer[1].produced==consumer[1].retrievedPacket)))) */
+accept_init:
+T0_init:
+	do
+	:: (! ((((producer[0].produced==consumer[0].retrievedPacket)) && ((producer[1].produced==consumer[1].retrievedPacket))))) -> goto T0_init
+	od;
+}
