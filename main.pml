@@ -55,10 +55,13 @@ proctype produce(int producerId){ /// 0 or 1 only
         //////// case producer is dictate to run from arbiter
             ///////// it is ok to not atomic------v
         :: else -> {
+            ///////////////////////////////////           v-------------- this value is signal by arbiter
             (sendBuffer[producerId].inusing_worker[0] == true) 
             do 
+                                //////// check integrity of producer and buffer
                 :: ( (producer[producerId].amountPacketToSend > 0) && (sendBuffer[producerId].cur_size < sendBuffer[producerId].MAXBUFFER_SIZE) ) -> 
                         {
+                            ////// if ok then change the buffer size
                             producer[producerId].running = true;
                             atomic{
                                 producer  [producerId].amountPacketToSend--;
@@ -71,6 +74,7 @@ proctype produce(int producerId){ /// 0 or 1 only
                         }
                 :: ((producer[producerId].amountPacketToSend > 0) && (sendBuffer[producerId].cur_size >= sendBuffer[producerId].MAXBUFFER_SIZE)) -> 
                         {
+                            /////////// if not but producer is able to produce we will loop back to wait signaling data from arbitee
                             atomic{
                                 sendBuffer[producerId].inusing_worker[0] = false;  /// 0 means producer 1 means in-usin
                             }
@@ -78,6 +82,7 @@ proctype produce(int producerId){ /// 0 or 1 only
                         }
                 :: (producer[producerId].amountPacketToSend == 0) ->
                         {
+                            //////////// producer is complete producer the packet let hault itself
                             atomic{
                                 sendBuffer[producerId].inusing_worker[0] = false;  /// 0 means producer 1 means in-using
                             }
@@ -97,26 +102,14 @@ proctype consume(int consumerId){
     do
         //////// case producer is dictate to run from arbiter
         :: else -> { 
-            
-
-                // do
-                //     :: atomic{ !recvBuffer[consumerId].inusing_worker[1] && recvBuffer[consumerId].cur_size > 0 -> {
-                //                                 recvBuffer[consumerId].inusing_worker[0]  = true;
-                //                                 consumer[consumerId].isRunning = true;   
-                //                                 break;
-                //                         }
-                //     }
-                //     :: else -> {
-                //         (!recvBuffer[consumerId].inusing_worker[1] && recvBuffer[consumerId].cur_size > 0)
-                //     };
-                // od
+                ///////////// lock the recv buffer for consuming
                 atomic {
                     (!recvBuffer[consumerId].inusing_worker[1] && recvBuffer[consumerId].cur_size > 0)
                     recvBuffer[consumerId].inusing_worker[0]  = true;
                     consumer[consumerId].isRunning = true;
                 }
         
-        
+            ///////////////////// update state of the size
             atomic{
                 recvBuffer[consumerId].cur_size--;
                 consumer  [consumerId].retrievedPacket++;
@@ -127,7 +120,7 @@ proctype consume(int consumerId){
             atomic{
             recvBuffer[consumerId].inusing_worker[0] = false;
             }
-
+            /////// if consumer is finish, let hault the consumer
             if
                 :: (consumer[consumerId].retrievedPacket >=  SENDING_SIZE_PER_LANE) -> goto doneConsumer;
                 :: else -> skip
@@ -160,7 +153,7 @@ proctype orchestrate(){
 
     do
         :: true -> {
-            /////////////////////// process which buffer should be proceed
+            /////////////////////// select which buffer should be proceed
             atomic{
                 bool src0_producable     =  (producer[0].amountPacketToSend > 0);
                 bool srcBuf0_proceedable =  sendBuffer[0].cur_size > 0;
@@ -194,7 +187,8 @@ proctype orchestrate(){
                 //////////select next buffer to select
                 if
                     :: fairSelect == 2 ->{
-                        //////// fairness checker allow arbiter to select
+                        //////// fairness checker does not explicitly select the buffer to go next
+                            ////// then we need to select bigger inflight buffer that ready to send next
                         arbiter.CAP_fairNessHandle = false;
                         if
                             :: lane0_ready &&  lane1_ready && (sendBuffer[0].cur_size >= sendBuffer[1].cur_size) -> {
@@ -250,6 +244,7 @@ proctype orchestrate(){
 
             if 
             :: arbiter.nextSending == -1 -> {
+                    /////// in case, arbiter is not select who is the next transfer buffer, we need to wait until some buffers are sendable
                     ((sendBuffer[0].cur_size > 0 && (recvBuffer[0].cur_size + SEND_BATCH_SIZE) <= recvBuffer[0].MAXBUFFER_SIZE) || 
                      (sendBuffer[1].cur_size > 0 && (recvBuffer[1].cur_size + SEND_BATCH_SIZE) <= recvBuffer[1].MAXBUFFER_SIZE))
                      printf("arbiter early restart\n")
@@ -264,12 +259,15 @@ proctype orchestrate(){
             //////////////// select data to do next
             CHECK_ARBITER_SELECTION_REGION:
             printf("arbiter wait for testing\n")
+            //////////////////////// wait for buffer is free and we will lock it
             ( (recvBuffer[arbiter.nextSending].inusing_worker[0] == false) && (sendBuffer[arbiter.nextSending].inusing_worker[0] == false));
             
             ///// lock the resource if inusing[0] is false, there is no thead to modify the variable therefore, we didn't need to make 2 resource occupy as atomic
             sendBuffer[arbiter.nextSending].inusing_worker[1] = true;
             recvBuffer[arbiter.nextSending].inusing_worker[1] = true;
 
+
+            ////// send data
             atomic{                             
                 int curSize      = sendBuffer[arbiter.nextSending].cur_size;
                 int curBatchSize = 0;
